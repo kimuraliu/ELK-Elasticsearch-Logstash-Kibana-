@@ -1,3 +1,192 @@
-1.
-2.
-3.
+官方網站
+https://www.elastic.co/
+
+Elasticsearch：核心資料庫是 NOSQL 的一種，但跟一般 NOSQL 的資料庫比較不一樣的地方，Elasticsearch 是透過 JSON 的方式來進行所有的 CRUD(select、insert、update、delete) 操作與設定
+
+Logstash：支援 48 種以上不同的輸入來源，及 50 種以上的輸出種類，可幫助你去收集各式各樣的 Log 或是資訊，並且根據你的 Log 來 Parser 成你要的資料欄位
+
+Kibana：視覺化與圖形化的方式來顯示各種 Log，可以透過 Elasticsearch 資料庫建立很多很漂亮的儀表板
+
+Beats：針對特定要收集的 Log，官方量身定做的輕量級日誌收集與轉送套件，目前的 Beats 有Filebeat、Packetbeat、Winlogbeat、Metricbeat、Heartbeat、Auditbeat 等，跟 Logstash 功能差不多，但只能單純的轉送 Log 無法像 Logstash 一樣自訂 Parser
+================================================================================================
+參考網站
+https://medium.com/@d101201007/centos7-elk-filebeat-%E6%8C%87%E4%BB%A4%E5%AE%89%E8%A3%9D-%E7%85%A7%E8%91%97%E8%B2%BC%E4%B8%8A%E5%B0%B1%E5%B0%8D%E4%BA%86-73f456381491
+https://blog.johnwu.cc/article/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-centos-red-hat.html
+================================================================================================
+FIlebeats 安裝
+
+預設安裝路徑: /usr/local/
+# wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.6.2-linux-x86_64.tar.gz
+(April 01, 2020 7.6.2版)
+# tar xzvf filebeat-7.6.2-linux-x86_64.tar.gz
+# mkdir -p /usr/local/filebeat
+# mv filebeat-7.6.2-linux-x86_64 /usr/local/filebeat
+# cd /usr/local/filebeat
+
+設定檔
+# vim filebeat.yml
+
+#複製貼上下面內容 (localhost改成自己的IP)
+name: localhost
+output:
+  logstash:
+    enabled: true
+    hosts:
+      - localhost:5044
+    index: "localhost"
+filebeat.inputs:
+    - type: log
+      paths:
+        - /usr/local/nginx/logs/access.log
+      tags: ["access"]
+#開啟debug模式
+logging.level: debug
+logging.selectors: [publish]
+logging.to_files: true
+logging.files:
+    path: /var/log/filebeat
+    name: filebeat-localhost
+    
+啟動
+/usr/local/filebeat/filebeat -c /usr/local/filebeat/filebeat.yml &
+================================================================================================
+Logstash 安裝
+
+# wget https://artifacts.elastic.co/downloads/logstash/logstash-7.6.2.tar.gz
+# tar xzvf logstash-7.6.2.tar.gz
+# mkdir -p /usr/local/logstash
+# mv logstash-7.6.2 /usr/local/logstash
+# cd /usr/local/logstash
+
+設定檔
+vim config/logstash.conf
+
+#複製貼上下面內容 (localhost改成自己的IP)
+input {
+  beats {
+    port => 5044
+  }
+}
+filter {
+    if "access" in [tags]{ #可以根據自訂Tag產生不同檔案
+        json {
+            source => "message"
+        }
+        geoip {
+            source => "client"
+            target => "geoip"
+        }
+        mutate {
+            add_field => { "[@metadata][tags]" => "nginx-access-logs"}
+        }
+    }
+}
+output {
+  elasticsearch {
+    hosts => "localhost:9200"
+    manage_template => false
+    index => "%{[@metadata][beat]}-%{[@metadata][tags]}-%{+YYYY.MM.dd}"
+    document_type => "%{[@metadata][type]}"
+  }
+}
+
+debug模式
+# vim config/logstash.yml
+
+加入下面這段
+# log.level: debug
+# path.logs: /var/log/logstash
+
+啟動/重啟
+-- config.reload.automatic 設定檔更動時自動重新載入，超好用的指令，這樣就不用因為更動設定檔重啟了!
+
+# kill -9 $(ps aux | grep logstash | awk ‘{print $2}’) && /usr/local/logstash/bin/logstash -f /usr/local/logstash/config/logstash.conf --config.reload.automatic &
+================================================================================================
+Elasticserach安裝
+
+# wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.6.2-linux-x86_64.tar.gz
+# tar xzvf elasticsearch-7.6.2-linux-x86_64.tar.gz
+# mkdir -p /usr/local/elasticsearch
+# mv elasticsearch-7.6.2 /usr/local/elasticsearch
+# adduser elastic
+# chown elastic:elastic -R /usr/local/elasticsearch/
+# cd /usr/local/elasticsearch
+
+設定檔
+# vim config/elasticsearch.yml
+
+#複製貼上下面內容 (localhost改成自己的IP)
+node.name: node-1
+network.host: localhost
+cluster.initial_master_nodes: ["node-1"]
+
+解決 Memery問題 / max file descriptors too low問題
+# vim /etc/sysctl.conf 追加以下内容：
+vm.max_map_count=655360
+儲存後，執行：
+# sysctl -p
+# vim /etc/security/limits.conf  追加下面這段:
+elastic soft nofile 65536
+elastic hard nofile 65536
+儲存後，執行：
+# su elastic -c 'ulimit -Hn'
+>>65536  //成功
+
+啟動 Elasticsearch
+# su elastic -c "/usr/local/elasticsearch/bin/elasticsearch &"
+//Elastic不建議用root啟動
+
+訪問/查看index
+https://localhost:9200/_cat/indices?v
+curl -XGET localhost:9200/_xpack?pretty
+
+[Query 指南]
+*elasticsearch = 可用http Ruqest查詢的資料庫
+*啟動有問題 最後可以檢查 startup.options檔案
+*刪除index -Kibana的manage 裡面可以刪除)
+
+================================================================================================
+Kibana安裝
+
+# wget https://artifacts.elastic.co/downloads/kibana/kibana-7.6.2-linux-x86_64.tar.gz
+# tar xzvf kibana-7.6.2-linux-x86_64.tar.gz
+# mkdir -p /usr/local/kibana
+# mv kibana-7.6.2-linux-x86_64 /usr/local/kibana
+# cd /usr/local/kibana
+
+設定檔
+# vim config/kibana.yml
+
+#複製貼上下面內容 (localhost改成自己的IP)
+server.host: "localhost"
+elasticsearch.hosts: ["http://localhost:9200"]
+
+啟動
+# /usr/local/kibana/bin/kibana --allow-root
+
+訪問 : http://localhost:5601/
+================================================================================================
+-------補充-------
+把 Nginx Log格式修改 成ELK好讀的形式 ←看這裡
+https://medium.com/@d101201007/elk%E6%95%99%E5%AD%B8-%E4%BF%AE%E6%94%B9nginx-log-%E6%A0%BC%E5%BC%8F-%E7%B5%A6elk-%E5%A5%BD%E8%AE%80%E7%9A%84nginx-log%E6%A0%BC%E5%BC%8F-38b7a3317e55
+
+[ELK教學] ELK一鍵啟動指令 整理
+https://medium.com/@d101201007/elk%E6%95%99%E5%AD%B8-elk%E4%B8%80%E9%8D%B5%E5%95%9F%E5%8B%95%E6%8C%87%E4%BB%A4-%E6%95%B4%E7%90%86-b757acb28fcc
+
+[ELK教學] 踩過的地雷 & ERROR坑
+https://medium.com/@d101201007/elk%E6%95%99%E5%AD%B8-%E8%B8%A9%E9%81%8E%E7%9A%84%E5%9C%B0%E9%9B%B7-error%E5%9D%91-e7aa8fb5fbb1
+
+參考資料:
+[filebeat中文設定檔]
+https://cloud.tencent.com/developer/article/1006051
+
+[filebeat標籤設定]
+https://www.elastic.co/guide/en/beats/filebeat/current/configuration-general-options.html#_literal_fields_under_root_literal
+
+[卡夫卡]
+https://juejin.im/post/5b7fa85bf265da43275d2bb8
+
+[ELK安裝]
+https://blog.johnwu.cc/article/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-centos-red-hat.html
+
+
