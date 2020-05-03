@@ -94,8 +94,8 @@ debug模式
 # vim config/logstash.yml
 
 加入下面這段
-# log.level: debug
-# path.logs: /var/log/logstash
+log.level: debug
+path.logs: /var/log/logstash
 
 啟動/重啟
 -- config.reload.automatic 設定檔更動時自動重新載入，超好用的指令，這樣就不用因為更動設定檔重啟了!
