@@ -1,0 +1,43 @@
+Elasticsearch
+官網下載rpm檔(7.6.2)
+https://www.elastic.co/downloads/elasticsearch
+# wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.6.2-x86_64.rpm
+
+透過 SCP 或 WinSCP 放到 /tmp/，執行以下指令安裝：
+# rpm -ivh /tmp/elasticsearch-*.rpm
+啟動
+systemctl start elasticsearch
+查看狀態
+systemctl status elasticsearch
+curl "http://localhost:9200/_cat/nodes"
+
+設定
+記憶體越大，查詢速度越快。但 Elasticsearch 使用記憶體有兩個條件限制：
+
+1.最高只能設定為系統的 50%。例：系統 8GB，Elasticsearch 只能設定 4GB。
+2.不能超過 32GB。
+違反以上兩個條件，Elasticsearch查詢速度會不升反減。
+
+設定 Elasticsearch 記憶體使用上限及下限。
+#vim /etc/elasticsearch/jvm.options
+# Xms 記憶體使用下限
+# Xmx 記憶體使用上限
+-Xms1g
+-Xmx1g
+
+設定 Elasticsearch 綁定的 IP 及 Port。
+
+
+
+
+
+
+
+Beats-Filebeat
+# wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.6.2-x86_64.rpm
+
+Logstash
+# wget https://artifacts.elastic.co/downloads/logstash/logstash-7.6.2.rpm
+
+Kibana
+#wget https://artifacts.elastic.co/downloads/kibana/kibana-7.6.2-x86_64.rpm
