@@ -80,7 +80,30 @@ Beats-Filebeat
 # wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.6.2-x86_64.rpm
 ===========================================================================================
 Logstash
+* logstash_Home ==>/usr/share/logstash
+* logstash_seetint ==>/etc/logstash
 # wget https://artifacts.elastic.co/downloads/logstash/logstash-7.6.2.rpm
+==>could not find java; set JAVA_HOME or ensure java is in PATH
+journalctl -ex 查看
+檢查PATH
+# echo $PATH
+檢察系統環境變數
+# set |grep 
+#環境變數區分:https://www.itread01.com/p/131873.html
+vim /etc/profile
+
+# JAVA_HOME=/usr/java/jdk1.8.0_181-cloudera
+# JRE_HOME=/usr/java/jdk1.8.0_181-cloudera/jre
+# PATH=$JAVA_HOME/bin:$JRE_HOME/bin
+# CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib
+# export JAVA_HOME JRE_HOME PATH CLASSPATH
+
+(參考)https://yq.aliyun.com/articles/656561
+JAVA_HOME=/usr/local/src/jdk
+JRE_HOME=/usr/local/src/jdk/jre
+PATH=JAVA_HOME/bin:JAVA_HOME/lib/dt.jar:JRE_HOME/lib
+export JAVA_HOME JRE_HOME PATH CLASSPATH
+
 
 從Logstash 官網下載 rpm 後，透過 SCP 或 WinSCP 放到 /tmp/，執行以下指令安裝：
 # rpm -ivh /tmp/logstash-*.rpm
@@ -88,6 +111,7 @@ Logstash
 
 啟動
 systemctl start logstash
+sudo /usr/share/logstash/bin/logstash --path.settings /etc/logstash
 查看狀態：
 systemctl status logstash
 
