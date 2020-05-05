@@ -138,6 +138,7 @@ elastic hard nofile 65536
 
 訪問/查看index
 https://localhost:9200/_cat/indices?v
+https://localhost:9200/_cat/nodes
 curl -XGET localhost:9200/_xpack?pretty
 
 [Query 指南]
@@ -213,6 +214,7 @@ https://www.elastic.co/guide/en/beats/filebeat/current/configuration-general-opt
 https://juejin.im/post/5b7fa85bf265da43275d2bb8
 
 [ELK安裝]
+https://blog.johnwu.cc/article/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-centos-red-hat.html
 https://blog.johnwu.cc/article/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-centos-red-hat.html
 
 
