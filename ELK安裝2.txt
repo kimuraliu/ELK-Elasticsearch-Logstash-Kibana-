@@ -1,3 +1,9 @@
+參考來源
+https://blog.johnwu.cc/article/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-centos-red-hat.html
+
+官方文件網站
+https://www.elastic.co/guide/index.html
+
 Elasticsearch
 官網下載rpm檔(7.6.2)
 https://www.elastic.co/downloads/elasticsearch
@@ -83,7 +89,13 @@ Logstash
 * logstash_Home ==>/usr/share/logstash
 * logstash_seetint ==>/etc/logstash
 # wget https://artifacts.elastic.co/downloads/logstash/logstash-7.6.2.rpm
-==>could not find java; set JAVA_HOME or ensure java is in PATH
+
+<錯誤問題>==>could not find java; set JAVA_HOME or ensure java is in PATH
+<解決方式>
+我們只需要在logstash或logstash.lib.sh的行首位置添加兩個環境變量（根據自己jdk安裝路徑修改）：
+export JAVA_HOME=/usr/java/jdk
+export PATH=$PATH:$JAVA_HOME/bin
+
 journalctl -ex 查看
 檢查PATH
 # echo $PATH
@@ -98,16 +110,28 @@ vim /etc/profile
 # CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib
 # export JAVA_HOME JRE_HOME PATH CLASSPATH
 
-(參考)https://yq.aliyun.com/articles/656561
+(參考1)https://yq.aliyun.com/articles/656561
 JAVA_HOME=/usr/local/src/jdk
 JRE_HOME=/usr/local/src/jdk/jre
 PATH=JAVA_HOME/bin:JAVA_HOME/lib/dt.jar:JRE_HOME/lib
 export JAVA_HOME JRE_HOME PATH CLASSPATH
+(參考2)https://www.twblogs.net/a/5c2f7532bd9eee35b3a4b28e
+export JAVA_HOME=/usr/jdk/
+export JRE_HOME=$JAVA_HOME/jre
+export CLASSPATH=.:$JAVA_HOME/lib:$JRE_HOME/lib:$CLASSPATH
+export PATH=$JAVA_HOME/bin:$JRE_HOME/bin:$PATH
 
 
 從Logstash 官網下載 rpm 後，透過 SCP 或 WinSCP 放到 /tmp/，執行以下指令安裝：
 # rpm -ivh /tmp/logstash-*.rpm
 # /usr/share/logstash/bin/system-install
+
+debug模式
+# vim config/logstash.yml
+
+加入下面這段
+log.level: debug
+path.logs: /var/log/logstash
 
 啟動
 systemctl start logstash
@@ -115,8 +139,26 @@ sudo /usr/share/logstash/bin/logstash --path.settings /etc/logstash
 查看狀態：
 systemctl status logstash
 
+<解決CPU使用率過高>
+修改/etc/logstash/logstash.yml中，config.reload.interval 由3s改常為120s
 
+ELK 教學 - Logstash Grok Filter 建立欄位
+https://blog.johnwu.cc/article/elk-logstash-grok-filter.html
 
+===========================================================================================
 
 Kibana
 #wget https://artifacts.elastic.co/downloads/kibana/kibana-7.6.2-x86_64.rpm
+
+設定 IP 及 Port
+vi /etc/kibana/kibana.yml
+
+# 綁定 Port，預設其實就是 5601
+server.port: 5601
+# 0.0.0.0 表示綁定所有 IP
+server.host: "0.0.0.0"
+
+
+啟動
+systemctl start kibana
+
