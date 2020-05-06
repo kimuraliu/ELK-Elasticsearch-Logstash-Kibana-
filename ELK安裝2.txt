@@ -102,7 +102,7 @@ journalctl -ex 查看
 檢察系統環境變數
 # set |grep 
 #環境變數區分:https://www.itread01.com/p/131873.html
-vim /etc/profile
+<無效>vim /etc/profile
 
 # JAVA_HOME=/usr/java/jdk1.8.0_181-cloudera
 # JRE_HOME=/usr/java/jdk1.8.0_181-cloudera/jre
@@ -121,10 +121,33 @@ export JRE_HOME=$JAVA_HOME/jre
 export CLASSPATH=.:$JAVA_HOME/lib:$JRE_HOME/lib:$CLASSPATH
 export PATH=$JAVA_HOME/bin:$JRE_HOME/bin:$PATH
 
+設定config檔
+vim /etc/logstash/conf.d/pipeline.conf
+輸入以下內容：
+*.在 output 的部分 index 後面多了 %{+xxxx.ww}，這是為了把 Log 按每週區分。
+*.未安裝beats前input需改成input { stdin { } }
+input {
+  beats {
+    port => 5044
+  }
+}
+filter {
+  grok {		
+      match => [ "message", "%{TIMESTAMP_ISO8601:logTimestamp} \[%{NUMBER:thread}\] %{DATA:logType} %{DATA:logger} - %{GREEDYDATA:detail}" ]
+  }
+  mutate {
+    add_tag => ["logstash"]
+  }
+}
+output {
+  elasticsearch {
+    hosts => ["http://localhost:9200"]
+    index => "%{[@metadata][beat]}-%{+xxxx.ww}"
+    document_type => "%{[@metadata][type]}"
+  }
+}
 
-從Logstash 官網下載 rpm 後，透過 SCP 或 WinSCP 放到 /tmp/，執行以下指令安裝：
-# rpm -ivh /tmp/logstash-*.rpm
-# /usr/share/logstash/bin/system-install
+
 
 debug模式
 # vim config/logstash.yml
@@ -132,6 +155,9 @@ debug模式
 加入下面這段
 log.level: debug
 path.logs: /var/log/logstash
+
+設定IP
+/etc/logstash/logstash.yml中 http.host位置
 
 啟動
 systemctl start logstash
