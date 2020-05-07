@@ -1,0 +1,9 @@
+參考網站
+https://atceiling.blogspot.com/2018/05/elk.html
+
+<設定index>
+Management(齒輪)-->index patterns
+
+<顯示資料清單>
+Discover(指南針)-->設定quick select
+
